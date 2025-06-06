@@ -1,5 +1,5 @@
 <template>
-  <div class="border pa-4 bg-surface" style="height: 80vh;">
+  <div class="border pa-4 bg-surface overflow-y-auto" style="height: 80vh">
     <h3>Preview</h3>
     <template v-if="player.selectedHighlights.length === 0">
       尚未選擇片段
@@ -64,8 +64,22 @@
 </style>
 <script setup lang="ts">
 import { ref, watch, watchEffect, defineProps } from "vue";
+import { type Highlight } from "@/types";
 import { storeToRefs } from "pinia";
 import { usePlayerStore } from "@/stores/player";
+import {
+  findClipById,
+  findCurrentClip,
+  findClipIndex,
+  getNextIndex,
+  getPreviousIndex,
+  isClipEnded,
+  isVideoEnded,
+  getVideo,
+  seekToTime,
+  playVideo,
+  pauseVideo,
+} from "@/utils/videoHelpers";
 
 defineProps({
   videoUrl: {
@@ -78,164 +92,128 @@ const { currentId } = storeToRefs(player);
 
 const videoRef = ref(null);
 const currentTime = ref(0);
-const currentSentence = ref(null);
+const currentSentence = ref<Highlight | null>(null);
 const isPlaying = ref(false);
 const clipDuration = 5; // 每段播放 5 秒
-
 const currentIndex = ref(0);
 
-function togglePlayPause() {
-  if (!videoRef.value) return;
-
-  if (videoRef.value.paused) {
-    videoRef.value.play();
-    isPlaying.value = true;
-  } else {
-    videoRef.value.pause();
-    isPlaying.value = false;
-  }
+function play() {
+  playVideo(getVideo(videoRef), isPlaying);
 }
 
-// 跳轉到某一個 highlight
-function goToHighlightById(id) {
+function pause() {
+  pauseVideo(getVideo(videoRef), isPlaying);
+}
+
+function togglePlayPause() {
+  const video = getVideo(videoRef);
+  if (!video) return;
+  video.paused ? play() : pause();
+}
+
+function goToHighlightById(id: number) {
   const index = player.selectedHighlights.findIndex((h) => h.id === id);
   if (index === -1) return;
-
-  const target = player.selectedHighlights[index];
   currentIndex.value = index;
-
-  if (videoRef.value) {
-    videoRef.value.currentTime = target.time;
-  }
+  seekToTime(getVideo(videoRef), player.selectedHighlights[index].time);
 }
 
-// 跳轉上一段
 function goToPrevious() {
-  if (player.selectedHighlights.length === 0 || currentId.value == null) return;
+  const { selectedHighlights } = player;
+  if (!selectedHighlights.length || player.currentId == null) return;
 
-  const index = player.selectedHighlights.findIndex(
-    (h) => h.id === currentId.value
-  );
-  if (index === -1) return;
-
-  const prevIndex =
-    index === 0 ? player.selectedHighlights.length - 1 : index - 1;
-  const prevHighlight = player.selectedHighlights[prevIndex];
-  player.setCurrentId(prevHighlight.id);
+  const index = findClipIndex(selectedHighlights, player.currentId);
+  const prevIndex = getPreviousIndex(index, selectedHighlights.length);
+  player.setCurrentId(selectedHighlights[prevIndex].id);
 }
 
-// 跳轉下一段
 function goToNext() {
-  if (player.selectedHighlights.length === 0 || currentId.value == null) return;
+  const { selectedHighlights } = player;
+  if (!selectedHighlights.length || player.currentId == null) return;
 
-  const index = player.selectedHighlights.findIndex(
-    (h) => h.id === currentId.value
-  );
-  if (index === -1) return;
-
-  const nextIndex = (index + 1) % player.selectedHighlights.length;
-  const nextHighlight = player.selectedHighlights[nextIndex];
-  player.setCurrentId(nextHighlight.id);
+  const index = findClipIndex(selectedHighlights, player.currentId);
+  const nextIndex = getNextIndex(index, selectedHighlights.length);
+  player.setCurrentId(selectedHighlights[nextIndex].id);
 }
 
 function updateCurrentTime() {
-  if (!videoRef.value) return;
+  const video = getVideo(videoRef);
+  if (!video) return;
 
-  const video = videoRef.value;
   currentTime.value = video.currentTime;
-
-  const { selectedHighlights } = player;
-  const duration = video.duration;
-  const current = currentTime.value;
-
-  if (!selectedHighlights.length) return;
-
-  // 找出目前所在的 clip（時間落在其內）
-  const match = selectedHighlights.find(
-    (clip) => current >= clip.time && current < clip.time + clipDuration
+  const match = findCurrentClip(
+    player.selectedHighlights,
+    currentTime.value,
+    clipDuration
   );
 
   if (match) {
     currentSentence.value = match;
-    if (currentId.value !== match.id) {
+    if (player.currentId !== match.id) {
       player.setCurrentId(match.id);
     }
   } else {
     currentSentence.value = null;
   }
 
-  const currentClip = selectedHighlights.find((c) => c.id === currentId.value);
+  const currentClip = findClipById(player.selectedHighlights, player.currentId);
   if (!currentClip) return;
 
   const isLastClip =
-    selectedHighlights.findIndex((c) => c.id === currentClip.id) ===
-    selectedHighlights.length - 1;
+    findClipIndex(player.selectedHighlights, currentClip.id) ===
+    player.selectedHighlights.length - 1;
 
-  const isClipEnded = current >= currentClip.time + clipDuration;
-  const isVideoEnded = current >= duration;
+  const clipEnded = isClipEnded(
+    currentTime.value,
+    currentClip.time,
+    clipDuration
+  );
+  const videoEnded = isVideoEnded(currentTime.value, video.duration);
 
-  // 播放下一段邏輯（clip 結束或影片結束）
-  if (isClipEnded || (isLastClip && isVideoEnded)) {
-    if (selectedHighlights.length === 1) {
-      // 只有一段 clip
-      video.currentTime = currentClip.time;
-    } else {
-      // 播放下一段（循環）
-      const currentIdx = selectedHighlights.findIndex(
-        (c) => c.id === currentClip.id
-      );
-      const nextIdx = (currentIdx + 1) % selectedHighlights.length;
-   
-        const nextClip = selectedHighlights[nextIdx];
-        player.setCurrentId(nextClip.id);
-        video.currentTime = nextClip.time;
-    }
-    videoRef.value.play();
-    isPlaying.value = true;
+  if (clipEnded || (isLastClip && videoEnded)) {
+    const currentIdx = findClipIndex(player.selectedHighlights, currentClip.id);
+    const nextIdx = getNextIndex(currentIdx, player.selectedHighlights.length);
+    const nextClip = player.selectedHighlights[nextIdx];
+    player.setCurrentId(nextClip.id);
+    seekToTime(video, nextClip.time);
+    play();
   }
 }
 
-// 取得目前播放時間對應的句子
 watch(currentTime, (time) => {
-  const index = player.selectedHighlights.findIndex(
-    (clip) => time >= clip.time && time <= clip.time + clipDuration
-  );
-  if (index !== -1) {
-    currentSentence.value = player.selectedHighlights[index];
-    currentIndex.value = index;
-  } else {
-    currentSentence.value = null;
-  }
+  const clip = findCurrentClip(player.selectedHighlights, time, clipDuration);
+  currentSentence.value = clip;
+  currentIndex.value = clip
+    ? findClipIndex(player.selectedHighlights, clip.id)
+    : 0;
 });
 
-watch(currentId, (id) => {
-  goToHighlightById(id);
-});
+watch(
+  () => player.currentId,
+  (id) => {
+    if (id != null) goToHighlightById(id);
+  }
+);
 
 watchEffect(() => {
   const highlights = player.selectedHighlights;
-  if (!videoRef.value) return;
+  const video = getVideo(videoRef);
+  if (!video) return;
 
-  if (highlights.length === 0) {
+  if (!highlights.length) {
     currentTime.value = 0;
-    videoRef.value.pause();
-    isPlaying.value = false;
+    pause();
     player.setCurrentId(0);
   } else if (
     highlights.length === 1 ||
-    !highlights.some((h) => h.id === currentId.value)
+    !highlights.some((h) => h.id === player.currentId)
   ) {
     player.setCurrentId(highlights[0].id);
-    if (videoRef.value.paused) {
-      videoRef.value.play();
-      isPlaying.value = true;
-    }
+    if (video.paused) play();
   }
 });
 
 function onSeek(time: number) {
-  if (videoRef.value) {
-    videoRef.value.currentTime = time;
-  }
+  seekToTime(getVideo(videoRef), time);
 }
 </script>

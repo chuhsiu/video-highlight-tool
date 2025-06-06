@@ -12,23 +12,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useVideoStore } from "@/stores/video";
 import { usePlayerStore } from "@/stores/player";
 import { fetchSections } from "@/services/fetchers";
+import { type Section } from "@/types"
 
 const router = useRouter();
 const player = usePlayerStore();
 const video = useVideoStore();
 const { videoUrl } = storeToRefs(video);
 
-if (video.videoDuration == 0) {
-  video.resetVideo();
-  router.push("/");
-}
-const sections = ref(await fetchSections(video.videoDuration));
+const sections = ref<Section[]>([])
+
+onMounted(async () => {
+  if (video.videoDuration === 0) {
+    video.resetVideo()
+    router.push('/')
+    return
+  }
+
+  try {
+    sections.value = await fetchSections(video.videoDuration)
+  } catch (error) {
+    console.error('Failed to fetchSections:', error)
+  }
+})
 
 onUnmounted(() => {
   video.resetVideo();
