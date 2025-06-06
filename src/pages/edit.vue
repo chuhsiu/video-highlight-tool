@@ -34,7 +34,7 @@
       </template>
       <template #error="{ error }">
         <v-alert type="error" color="error" icon="mdi-alert-circle">
-          發生錯誤：{{ error.message }}
+          Failed to Load data：{{ error.message }}
         </v-alert>
       </template>
     </Suspense>

@@ -1,9 +1,9 @@
 <template>
-  <div class="border pa-4 bg-surface relative">
+  <div class="border pa-4 bg-surface">
     <h3>Preview</h3>
     <template v-if="player.selectedHighlights.length === 0">
-      尚未選擇片段
-      <v-skeleton-loader boilerplate type="image" class="ma-4" />
+      <p class="text-grey-darken-3">Please select a highlight!</p>
+      <v-skeleton-loader boilerplate type="image" class="mt-4 mb-8" />
     </template>
     <template v-else>
       <div class="relative">
@@ -19,8 +19,8 @@
         </video>
         <div
           v-if="currentSentence"
-          class="position-absolute left-0 bottom-0 text-caption font-weight-400"
-          style="translate: (-50%, 0%)"
+          class="position-absolute left-0 text-caption font-weight-400"
+          style="translate: (-50%, 0%); bottom: 3px;"
         >
           {{ currentSentence.text }}
         </div>
