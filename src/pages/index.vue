@@ -22,10 +22,11 @@
                 The browser doesn't support HTML5 video.
           </video>
           <template v-else>
+            <p class="mt-2 text-grey-darken-3">No video now.</p>
             <v-skeleton-loader
               boilerplate
               type="image"
-              class="ma-4"
+              class="my-4"
             />
           </template>
         </div>
