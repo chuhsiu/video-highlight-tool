@@ -1,5 +1,6 @@
 <template>
-    <div ref="containerRef" class="border pa-4 bg-surface overflow-y-auto" style="max-height: 100vh;">
+    <div ref="containerRef" class="border pa-4 bg-surface overflow-y-auto" 
+    :style="{ maxHeight: isMobile ? '25vh' : '80vh' }">
         <h3>Transcript</h3>
         <div v-for="(section, index) in sections" :key="index">
             <h4 class="py-2">{{ section.title }}</h4>
@@ -33,9 +34,13 @@ li {
 }
 </style>
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick, defineProps } from 'vue'
+import { ref, watch, onMounted, nextTick, defineProps, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePlayerStore } from "@/stores/player"
+import { useDisplay } from 'vuetify'
+
+const { xs, sm } = useDisplay()
+const isMobile = computed(() => xs.value || sm.value)
 
 const player = usePlayerStore()
 const { currentId, selectedHighlights } = storeToRefs(player)
@@ -74,16 +79,10 @@ function registerHighlightRef(id: number, el: Element | null) {
 function scrollToCurrent() {
   nextTick(() => {
     const el = highlightRefs.get(currentId.value!)
-    const container = containerRef.value
-    if (el && container) {
-      const elOffset = el.offsetTop
-      const elHeight = el.offsetHeight
-      const containerHeight = container.clientHeight
-      const scrollTop = elOffset - containerHeight / 2 + elHeight / 2
-
-      container.scrollTo({
-        top: scrollTop,
-        behavior: 'smooth'
+    if (el) {
+      el.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
       })
     }
   })
