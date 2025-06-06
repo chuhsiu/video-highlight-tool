@@ -1,59 +1,42 @@
 <template>
-    <div class="border pa-4">
-        <h3>Editor</h3>
-        <v-list 
-            v-model:selected="selectedHighlights"
-            select-strategy="leaf"
-        >
-            <v-list-subheader v-for="(section, index) in sections" :key="index">
-                {{ section.title }}
-
-                <v-list-item
-                    v-for="(highlight, i) in section.highlights"
-                    :key="i"
-                    :value="highlight"
-                    :color="highlight.id === currentId ? 'primary' : ''"
+    <div class="border pa-4 bg-surface editor-container" ref="containerRef">
+        <h3>Transcript</h3>
+        <div v-for="(section, index) in sections" :key="index">
+            <h4 class="py-2">{{ section.title }}</h4>
+            <ul>
+                <li
+                v-for="(highlight, i) in section.highlights"
+                :key="i"
+                :ref="el => registerHighlightRef(highlight.id, el)"
+                @click="toggleSelection(highlight)"
+                :class="{
+                    'bg-blue-darken-3' : highlight.id === currentId,
+                    'text-grey-lighten-2': isSelected(highlight) && highlight.id === currentId,
+                    'text-blue-lighten-1': isSelected(highlight) && highlight.id !== currentId,
+                    'border-primary': isSelected(highlight),
+                    'bg-grey-darken-2' : highlight.id !== currentId
+                }"
+                class="border-md rounded-lg ma-2 pa-2"
                 >
-                    <span class="text-primary"><strong>{{ highlight.time }}s</strong></span> - {{ highlight.text }}
-
-                    <template #prepend="{ isSelected, select }">
-                        <v-list-item-action
-                            :model-value="isSelected"
-                            @update:model-value="select"
-                        />
-                    </template>
-                </v-list-item>
-                <v-divider></v-divider>
-            </v-list-subheader>
-        </v-list>
+                <strong>{{ highlight.time }}s</strong> - {{ highlight.text }}
+                </li>
+            </ul>
+            <v-divider></v-divider>
+        </div>
     </div>
-     <!-- <div v-for="(section, index) in sections" :key="index">
-        <h2>{{ section.title }}</h2>
-        <ul>
-            <li
-            v-for="(highlight, i) in section.highlights"
-            :key="i"
-            @click="toggleSelection(highlight)"
-            :class="{
-                'bg-red-darken-4' : highlight.id === currentId,
-                'text-blue-darken-4': isSelected(highlight)
-            }"
-            >
-            <strong>{{ highlight.time }}s</strong> - {{ highlight.text }}
-            </li>
-        </ul>
-     </div> -->
-     
-      <h3>已選擇的句子摘要：</h3>
-      <ul>
-        <li v-for="(item, idx) in selectedHighlights" :key="idx">
-          <strong>{{ item.time }}s</strong> - {{ item.text }}
-        </li>
-      </ul>
-      <p>目前 ID：{{ currentId }}</p>
 </template>
+<style scoped>
+.editor-container {
+  height: 80vh;
+  overflow-y: auto;
+}
+li {
+    list-style: none;
+    cursor: pointer;
+}
+</style>
 <script setup lang="ts">
-import { ref, watch, computed, defineProps } from 'vue'
+import { ref, watch, onMounted, nextTick, defineProps } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePlayerStore } from "@/stores/player"
 
@@ -66,24 +49,53 @@ defineProps({
     }
 })
 
-watch(selectedHighlights, (highlight) =>{
-    player.setHighlights(highlight)
-})
+function toggleSelection(highlight: { id: number; text: string; time: number }) {
+    const exists = selectedHighlights.value.some(item => item.id === highlight.id)
+    if (exists) {
+        player.removeHighlight(highlight.id)
+    } else {
+        player.addHighlight(highlight)
+    }
+}
 
-
-// function toggleSelection(highlight: { id: number; text: string; time: number }) {
-//     const exists = selectedHighlights.value.some(item => item.id === highlight.id)
-//     if (exists) {
-//         player.removeHighlight(highlight.id)
-//     } else {
-//         player.addHighlight(highlight)
-//     }
-// }
-
-// function isSelected(highlight: { id: number; text: string; time: number }) {
-//     return selectedHighlights.value.some(item => item.id === highlight.id)
+function isSelected(highlight: { id: number; text: string; time: number }) {
+    return selectedHighlights.value.some(item => item.id === highlight.id)
   
-// }
+}
 
+// DOM refs
+const containerRef = ref<HTMLElement | null>(null)
+const highlightRefs = new Map<number, HTMLElement>()
+
+function registerHighlightRef(id: number, el: Element | null) {
+  if (el instanceof HTMLElement) {
+    highlightRefs.set(id, el)
+  }
+}
+
+// 滾動到中間
+function scrollToCurrent() {
+  nextTick(() => {
+    const el = highlightRefs.get(currentId.value!)
+    const container = containerRef.value
+    if (el && container) {
+      const elOffset = el.offsetTop
+      const elHeight = el.offsetHeight
+      const containerHeight = container.clientHeight
+      const scrollTop = elOffset - containerHeight / 2 + elHeight / 2
+
+      container.scrollTo({
+        top: scrollTop,
+        behavior: 'smooth'
+      })
+    }
+  })
+}
+
+watch(currentId, () => {
+  if (currentId.value != null) {
+    scrollToCurrent()
+  }
+})
 
 </script>

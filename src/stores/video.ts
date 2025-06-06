@@ -21,6 +21,4 @@ export const useVideoStore = defineStore('video', () => {
     setVideoInfo,
     resetVideo
   }
-
-    return{ videoUrl, videoDuration, setVideoInfo, resetVideo }
 })

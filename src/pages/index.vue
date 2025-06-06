@@ -7,19 +7,16 @@
           accept="video/*" 
           @change="handleUpload"
           clearable 
-          density="compact" 
-          variant="compact">
+          density="comfortable" 
+          variant="comfortable">
         </v-file-upload>
-        <v-btn v-if="videoPreviewUrl" @click="goToEdit">
-          Generate
-        </v-btn>
       </v-col>
         <v-col >
-        <div class="border pa-4">
+        <div class="border pa-4 bg-surface">
           <h3>Preview</h3>
           <video v-if="videoPreviewUrl"
             :src="videoPreviewUrl"
-            class="video-player"
+            class="video-player mt-4"
             controls>
             <source type="video/*"/>
                 The browser doesn't support HTML5 video.
@@ -33,6 +30,11 @@
           </template>
         </div>
       </v-col>
+    </v-row>
+    <v-row v-if="videoPreviewUrl" class="d-flex justify-center">
+      <v-btn @click="goToEdit" color="success">
+          Generate
+        </v-btn>
     </v-row>
   </v-container>
 

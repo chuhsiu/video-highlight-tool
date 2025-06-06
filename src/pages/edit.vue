@@ -1,5 +1,4 @@
 <template>
-     <router-link to="/">回上一頁</router-link>
      <Suspense>
       <template #default>
         <Editor-Loader />

@@ -2,7 +2,7 @@ import { http, HttpResponse, delay } from "msw";
 import { faker } from '@faker-js/faker'
 
 export const handlers = [
-  http.get("/users",async ({ request }) => {
+  http.get("/getSections",async ({ request }) => {
     const url = new URL(request.url);
     const videoDuration = Number(url.searchParams.get('duration'));
 
