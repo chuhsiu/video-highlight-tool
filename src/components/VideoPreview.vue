@@ -1,12 +1,12 @@
 <template>
-  <div class="border pa-4 bg-surface overflow-y-auto" style="height: 80vh">
+  <div class="border pa-4 bg-surface relative">
     <h3>Preview</h3>
     <template v-if="player.selectedHighlights.length === 0">
       尚未選擇片段
       <v-skeleton-loader boilerplate type="image" class="ma-4" />
     </template>
     <template v-else>
-      <div style="position: relative">
+      <div class="relative">
         <video
           ref="videoRef"
           width="100%"

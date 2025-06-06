@@ -1,5 +1,5 @@
 <template>
-    <div class="border pa-4 bg-surface editor-container" ref="containerRef">
+    <div ref="containerRef" class="border pa-4 bg-surface overflow-y-auto" style="max-height: 100vh;">
         <h3>Transcript</h3>
         <div v-for="(section, index) in sections" :key="index">
             <h4 class="py-2">{{ section.title }}</h4>
@@ -26,10 +26,7 @@
     </div>
 </template>
 <style scoped>
-.editor-container {
-  height: 80vh;
-  overflow-y: auto;
-}
+
 li {
     list-style: none;
     cursor: pointer;

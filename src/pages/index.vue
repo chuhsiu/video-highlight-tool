@@ -62,7 +62,7 @@ const videoFile = ref<File | null>(null)
 const videoPreviewUrl = ref<string | null>(null)
 
 function handleUpload(e){
-  const file = event.target.files[0]
+  const file = e.target.files[0]
   if (!file) return
 
   videoFile.value = file
