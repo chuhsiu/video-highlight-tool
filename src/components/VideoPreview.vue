@@ -6,7 +6,7 @@
       <v-skeleton-loader boilerplate type="image" class="mt-4 mb-8" />
     </template>
     <template v-else>
-      <div class="relative">
+      <div class="position-relative">
         <video
           ref="videoRef"
           width="100%"
