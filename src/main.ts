@@ -15,14 +15,17 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
 async function prepareApp() {
-    if (import.meta.env.DEV ) {
-      const { worker } = await import('./mocks/browser')
-      return worker.start()
-    }
-  
-    return Promise.resolve()
-  }
-
+  if (import.meta.env) {
+     const { worker } = await import('./mocks/browser')
+     return worker.start({
+       serviceWorker: {
+         url: import.meta.env.VITE_MSW_PATH,
+       },
+     })
+   }
+ 
+   return Promise.resolve()
+ }
 // Styles
 import 'unfonts.css'
 
