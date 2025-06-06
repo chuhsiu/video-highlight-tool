@@ -24,15 +24,15 @@ export const usePlayerStore = defineStore('player', () => {
         selectedHighlights.splice(index, 1)
       }
     }
-    function setHighlights(highlights: { id: number; text: string; time: number }[]){
-      selectedHighlights.splice(0, selectedHighlights.length, ...highlights.sort((a, b) => a.time - b.time))
+    function resetHighlights(){
+      selectedHighlights.splice(0, selectedHighlights.length)
     }
 
     return {
       currentId,
       setCurrentId,
       selectedHighlights,
-      setHighlights,
+      resetHighlights,
       addHighlight,
       removeHighlight,
     }

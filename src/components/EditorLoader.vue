@@ -16,10 +16,11 @@ import { ref, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useVideoStore } from "@/stores/video";
-
+import { usePlayerStore } from "@/stores/player";
 import { fetchSections } from "@/services/fetchers";
 
 const router = useRouter();
+const player = usePlayerStore();
 const video = useVideoStore();
 const { videoUrl } = storeToRefs(video);
 
@@ -31,5 +32,7 @@ const sections = ref(await fetchSections(video.videoDuration));
 
 onUnmounted(() => {
   video.resetVideo();
+  player.resetHighlights();
+  player.setCurrentId(0);
 });
 </script>
