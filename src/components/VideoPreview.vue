@@ -177,20 +177,21 @@ function updateCurrentTime() {
   // 播放下一段邏輯（clip 結束或影片結束）
   if (isClipEnded || (isLastClip && isVideoEnded)) {
     if (selectedHighlights.length === 1) {
-      // 只有一段，重播這段
+      // 只有一段 clip
       video.currentTime = currentClip.time;
-      videoRef.value.pause();
     } else {
       // 播放下一段（循環）
       const currentIdx = selectedHighlights.findIndex(
         (c) => c.id === currentClip.id
       );
       const nextIdx = (currentIdx + 1) % selectedHighlights.length;
-      const nextClip = selectedHighlights[nextIdx];
-      player.setCurrentId(nextClip.id);
-      video.currentTime = nextClip.time;
+   
+        const nextClip = selectedHighlights[nextIdx];
+        player.setCurrentId(nextClip.id);
+        video.currentTime = nextClip.time;
     }
-    isPlaying.value = false;
+    videoRef.value.play();
+    isPlaying.value = true;
   }
 }
 
